@@ -13,7 +13,8 @@ Apple Developer Academy 활동중 개인 학습 기록을 담고 있습니다.
 | [Apple music Copy](./Apple%20music%20Copy) | Apple Music UI 클론 연습 | SwiftUI, ScrollView, LazyVGrid | 2026.04.07
 | [Embedded Swift](./Embedded_Swift) | ESP32로 컴파일을 위한 환경 설정, 기초 습득  | ESP-IDF, RISC-V, Cross compile | 2026.05.10
 | [imu_study](./imu_study) | iOS 디바이스 IMU 센서 활용 | CoreMotion, Accelerometer, Gyroscope | 2026.05.12
-
+| [watch_test](./watch_test) | Apple Watch 개발 환경 학습 | apple watch, watchOS, CoreMotion | 2026.05.19
+| [Navigation_study](./navigation_study) | navigation stack, link 기초문법 학습 | NavigatoinStack, NavigationLink | 2026.05.20
 
 <!-- ## 🛠 Environment
 - Xcode (버전 명시)
