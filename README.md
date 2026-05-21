@@ -15,6 +15,9 @@ Apple Developer Academy 활동중 개인 학습 기록을 담고 있습니다.
 | [imu_study](./imu_study) | iOS 디바이스 IMU 센서 활용 | CoreMotion, Accelerometer, Gyroscope | 2026.05.12
 | [watch_test](./watch_test) | Apple Watch 개발 환경 학습 | apple watch, watchOS, CoreMotion | 2026.05.19
 | [Navigation_study](./navigation_study) | navigation stack, link 기초문법 학습 | NavigatoinStack, NavigationLink | 2026.05.20
+| [csvExport_study](./csvExport_study) | String -> csv 변환, url 임시저장 | temporaryDirectory , ShareLink, .write(to: url, atomically: true ...) | 2026.05.21
+<!-- | [CoreMoion_study](./CoreMotion_study) |  |  | 2026.05.21 -->
+
 
 <!-- ## 🛠 Environment
 - Xcode (버전 명시)
