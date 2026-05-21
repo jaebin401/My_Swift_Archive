@@ -34,11 +34,11 @@ struct ContentView: View {
                         .onDisappear {
                             motion.stop()
                         }
-                        .font(.system(.title3, design: .monospaced))
-                        .padding()
-                        .background(Color.gray.opacity(0.15))
-                        .cornerRadius(12)
                     }
+                    .font(.system(.title3, design: .monospaced))
+                    .padding()
+                    .background(Color.gray.opacity(0.15))
+                    .cornerRadius(12)
                     
                     NavigationLink("Accelerometer"){
                         Text("Accelerometer")
@@ -53,11 +53,11 @@ struct ContentView: View {
                         .onDisappear {
                             motion.stop()
                         }
-                        .font(.system(.title3, design: .monospaced))
-                        .padding()
-                        .background(Color.gray.opacity(0.15))
-                        .cornerRadius(12)
                     }
+                    .font(.system(.title3, design: .monospaced))
+                    .padding()
+                    .background(Color.gray.opacity(0.15))
+                    .cornerRadius(12)
                     
                     NavigationLink("Accel"){
                         Text("Accelerometer")
@@ -73,16 +73,13 @@ struct ContentView: View {
                         .onDisappear {
                             motion.stop()
                         }
-                        .font(.system(.title3, design: .monospaced))
-                        .padding()
-                        .background(Color.gray.opacity(0.15))
-                        .cornerRadius(12)
                     }
+                    .font(.system(.title3, design: .monospaced))
+                    .padding()
+                    .background(Color.gray.opacity(0.15))
+                    .cornerRadius(12)
                 }
             }
-            //.padding()
-            // View가 화면에 나타날 때 센서 시작
-            
         }
     }
 }
