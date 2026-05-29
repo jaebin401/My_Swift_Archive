@@ -24,6 +24,16 @@ struct ContentView: View {
                 .padding(16)
                 .background(Color.gray.opacity(0.3))
                 .cornerRadius(8)
+                
+                HStack {
+                    Spacer(minLength: 90)
+                    ButtonComponent(title: "pop") {
+                        navigationPage()
+                    }
+                    Spacer(minLength: 90)
+                    
+                }
+                
             }
         }
     }
