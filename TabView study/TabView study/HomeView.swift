@@ -15,6 +15,10 @@ struct HomeView: View {
         VStack() {
             Text("Home")
             Button("to Tip") {selectedTab = 1}
-        }
+            
+            NavigationLink("상세화면으로") {
+                subHomeView()
+            }
+        }.navigationTitle("home")
     }
 }
