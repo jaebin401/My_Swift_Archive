@@ -19,6 +19,7 @@ Apple Developer Academy 활동중 개인 학습 기록을 담고 있습니다.
 | [CoreMoion_study](./CoreMotion_study) | CoreMotion 전체 센서 데이터 출력 | CMMotionManager | 2026.05.21
 | [SliderSync](./SliderSync) | watch - iPhone 실시간 데이터 송수신 | WatchConnectivity| 2026.05.27
 | [TabView_study](./TabView_study) | 탭뷰 기초, 변수 바인딩을 통한 탭 이동 기초 학습 | TabView | 2026.05.28
+| [SwiftData_study](./SwiftData_Study) | SwiftData로 CRUD | SwiftData | 2026.05.29
 
 
 <!-- ## 🛠 Environment
