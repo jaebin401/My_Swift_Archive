@@ -12,7 +12,7 @@ struct ContentView: View {
         NavigationStack {
             VStack {
                 NavigationLink("page 1") {
-                    Text("this is page 1")
+                    navigationPage()
                 }
                 .padding(16)
                 .background(Color.gray.opacity(0.3))
