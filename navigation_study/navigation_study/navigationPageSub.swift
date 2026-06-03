@@ -31,14 +31,13 @@ struct navigationPage: View {
         .padding(16)
         .background(Color.gray.opacity(0.3))
         .cornerRadius(8)
-        .navigationTitle("제목")    
-        NavigationLink {
-            navigationPageSub()
-        }
+        .navigationTitle("제목")  
+        
+          
     }
 }
 
 #Preview {
-    navigationPage()
+    navigationPageSub()
 }
 
