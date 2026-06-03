@@ -32,7 +32,7 @@ struct navigationPage: View {
         .background(Color.gray.opacity(0.3))
         .cornerRadius(8)
         .navigationTitle("제목")    
-        NavigationLink {
+        NavigationLink("hello") {
             navigationPageSub()
         }
     }
