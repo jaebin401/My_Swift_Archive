@@ -12,23 +12,23 @@ struct ContentView: View {
     @State private var model = CalibrationModel()
 
     var body: some View {
-        switch model.state {
-        case .idle:
-            IdleView(model: model)
-        case .calibrating(let progress):
-            CalibratingView(progress: progress)
-        case .calibrated:
-            CalibratedView(model: model)
-        case .failed(let reason):
-            FailedView(reason: reason, model: model)
+        Group {
+            switch model.state {
+            case .idle:
+                IdleView(model: model)
+            case .calibrating(let progress):
+                CalibratingView(progress: progress)
+            case .calibrated:
+                CalibratedView(model: model)
+            case .failed(let reason):
+                FailedView(reason: reason, model: model)
+            }
         }
-    }
-    // iPhone → Watch command 수신 핸들러 등록
-    // navigationRoot에서 한 번만 등록 (타이밍 문제 방지)
-    .onAppear {
-        WatchConnector.shared.onStartCalibrationCommand = { [weak model] in
-            model?.retry()   // idle 상태로 초기화 후
-            model?.start()   // 바로 시작
+        .onAppear {
+            WatchConnector.shared.onStartCalibrationCommand = { [weak model] in
+                model?.retry()
+                model?.start()
+            }
         }
     }
 }
@@ -86,15 +86,21 @@ private struct CalibratedView: View {
                     ZoneIndicator(zone: classifier.currentZone)
                 }
 
+                // 디버그 오버레이
+                // watchMinusY_inRef: 우측(y≈+1) / 좌측(x≈-1) 판별용
                 if let classifier {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("RMS (1초 window)")
+                        Text("디버그")
                             .font(.caption2)
                             .foregroundStyle(.secondary)
-                        Text(String(format: "x (우측): %.4f g", classifier.rmsX))
+                        Text(String(format: "accel RMS:  %.4f g", classifier.rmsAccel))
                             .font(.system(.caption, design: .monospaced))
-                        Text(String(format: "y (좌측): %.4f g", classifier.rmsY))
+                        Text(String(format: "-Y in ref x: %+.3f", classifier.watchMinusYx))
                             .font(.system(.caption, design: .monospaced))
+                            .foregroundStyle(classifier.watchMinusYx < 0.6 ? .orange : .primary)
+                        Text(String(format: "-Y in ref y: %+.3f", classifier.watchMinusYy))
+                            .font(.system(.caption, design: .monospaced))
+                            .foregroundStyle(classifier.watchMinusYy > 0.6 ? .blue : .primary)
                     }
                     .padding(8)
                     .background(.secondary.opacity(0.15))

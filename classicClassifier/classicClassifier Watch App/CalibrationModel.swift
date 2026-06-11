@@ -80,7 +80,7 @@ final class CalibrationModel {
         }
     }
 
-    // MARK: - 안정성 검증 + R_cal 저장
+    // MARK: - 안정성 검증 + R_cal 저장 (Gram-Schmidt Z축 고정)
     private func finalize() {
         let samples = buffer
         let magnitudes = samples.map { sample in
@@ -88,7 +88,7 @@ final class CalibrationModel {
                + sample.accelY * sample.accelY
                + sample.accelZ * sample.accelZ)
         }
-        let mean = magnitudes.reduce(0, +) / Double(magnitudes.count)
+        let mean     = magnitudes.reduce(0, +) / Double(magnitudes.count)
         let variance = magnitudes.map { ($0 - mean) * ($0 - mean) }
                                  .reduce(0, +) / Double(magnitudes.count)
 
@@ -100,8 +100,55 @@ final class CalibrationModel {
         }
 
         guard let lastSample = samples.last else { return }
+
+        // MARK: 4.1 Gram-Schmidt Z축 고정
+        // calibration 순간 Watch -Y축의 world 방향을 기준 +Y 후보로 사용.
+        // Z축은 world up (0,0,1)으로 강제 고정해 calibration 기울기 오차 제거.
+        //
+        // R_att의 2번째 column = Watch +Y in world = (m12, m22, m32)
+        // Watch -Y in world = (-m12, -m22, -m32)
+        let R           = lastSample.rotationMatrix
+        let watchMinusY = SIMD3(-R.m12, -R.m22, -R.m32)   // 기준 +Y 후보
+
+        // Step 1: Z축 고정 (world up)
+        let zRef = SIMD3<Double>(0, 0, 1)
+
+        // Step 2: Gram-Schmidt — watchMinusY에서 Z 성분 제거 후 정규화
+        // yRef = normalize(watchMinusY - (watchMinusY · zRef) * zRef)
+        let dot   = watchMinusY.x * zRef.x + watchMinusY.y * zRef.y + watchMinusY.z * zRef.z
+        let yRaw  = SIMD3(watchMinusY.x - dot * zRef.x,
+                          watchMinusY.y - dot * zRef.y,
+                          watchMinusY.z - dot * zRef.z)
+        let yNorm = sqrt(yRaw.x*yRaw.x + yRaw.y*yRaw.y + yRaw.z*yRaw.z)
+
+        guard yNorm > 1e-6 else {
+            // watchMinusY가 Z축과 평행 — 칫솔이 하늘/땅을 향하는 자세
+            invalidateExtendedSession()
+            WatchConnector.shared.sendCalibrationStatus(.failed)
+            state = .failed(reason: "자세를 확인해주세요. 칫솔이 하늘/땅을 향하고 있어요.")
+            return
+        }
+        let yRef = SIMD3(yRaw.x / yNorm, yRaw.y / yNorm, yRaw.z / yNorm)
+
+        // Step 3: xRef = yRef × zRef (오른손 법칙)
+        let xRef = SIMD3(
+            yRef.y * zRef.z - yRef.z * zRef.y,
+            yRef.z * zRef.x - yRef.x * zRef.z,
+            yRef.x * zRef.y - yRef.y * zRef.x
+        )
+
+        // Step 4: R_cal 재구성
+        // 각 열(column)이 기준축의 world 방향
+        // CMRotationMatrix row-major 표기 (mRC: R=행, C=열)
+        // R_cal = [xRef | yRef | zRef]
+        let rCal = CMRotationMatrix(
+            m11: xRef.x, m12: yRef.x, m13: zRef.x,
+            m21: xRef.y, m22: yRef.y, m23: zRef.y,
+            m31: xRef.z, m32: yRef.z, m33: zRef.z
+        )
+
         referenceFrame = ReferenceFrame(
-            rCal:        lastSample.rotationMatrix,
+            rCal:        rCal,
             capturedAt:  Date(),
             sampleCount: samples.count
         )
@@ -109,7 +156,6 @@ final class CalibrationModel {
         WKInterfaceDevice.current().play(.success)
         WatchConnector.shared.sendCalibrationStatus(.calibrated)
         state = .calibrated
-        // ExtendedRuntimeSession은 분류 세션이 끝날 때까지 유지
     }
 
     // MARK: - Extended Runtime Session 관리
@@ -126,8 +172,7 @@ final class CalibrationModel {
         extendedSession = nil
     }
 
-    // delegate를 별도 객체로 분리 (CalibrationModel이 NSObject 상속 불필요)
-    private lazy var extendedSessionDelegate = ExtendedSessionDelegate()
+    private var extendedSessionDelegate = ExtendedSessionDelegate()
 }
 
 // MARK: - WKExtendedRuntimeSessionDelegate

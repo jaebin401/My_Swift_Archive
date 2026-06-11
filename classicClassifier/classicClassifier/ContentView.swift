@@ -35,25 +35,29 @@ struct ContentView: View {
                 if let frame = connector.latestFrame {
                     ZoneIndicator(zone: frame.zone)
 
+                    // 디버그 수치
+                    // rmsX = accel magnitude RMS (움직임 활성 감지)
+                    // rmsY = watchMinusY_inRef.y (우측 판별 기준, ≈ +1이면 우측)
                     VStack(alignment: .leading, spacing: 6) {
-                        Text("RMS (1초 window)")
+                        Text("디버그 (1초 window)")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                         HStack {
-                            Text("x (우측)")
+                            Text("accel RMS")
                                 .font(.system(.caption, design: .monospaced))
-                                .foregroundStyle(.blue)
+                                .foregroundStyle(.secondary)
                             Spacer()
                             Text(String(format: "%.4f g", frame.rmsX))
                                 .font(.system(.caption, design: .monospaced))
                         }
                         HStack {
-                            Text("y (좌측)")
+                            Text("-Y in ref y  (우측 ≈ +1)")
                                 .font(.system(.caption, design: .monospaced))
-                                .foregroundStyle(.orange)
+                                .foregroundStyle(frame.rmsY > 0.5 ? .blue : .secondary)
                             Spacer()
-                            Text(String(format: "%.4f g", frame.rmsY))
+                            Text(String(format: "%+.3f", frame.rmsY))
                                 .font(.system(.caption, design: .monospaced))
+                                .foregroundStyle(frame.rmsY > 0.6 ? .blue : .primary)
                         }
                     }
                     .padding()
@@ -86,7 +90,6 @@ private struct CalibrationControlView: View {
 
     var body: some View {
         VStack(spacing: 10) {
-            // Watch로부터 수신한 calibration 상태 표시
             HStack(spacing: 6) {
                 Image(systemName: statusIcon)
                     .foregroundStyle(statusColor)
@@ -95,8 +98,6 @@ private struct CalibrationControlView: View {
                     .foregroundStyle(statusColor)
             }
 
-            // Calibration 시작 버튼
-            // calibrating 중에는 비활성화
             Button {
                 connector.sendStartCalibration()
             } label: {
@@ -174,5 +175,7 @@ private struct ZoneIndicator: View {
 }
 
 #Preview {
-    ContentView()
+    NavigationStack {
+        ContentView()
+    }
 }

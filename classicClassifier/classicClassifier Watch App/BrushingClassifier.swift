@@ -9,35 +9,48 @@ import CoreMotion
 import Foundation
 
 // MARK: - 분류 결과
-// rawValue: WatchConnectivity 전송 시 String으로 직렬화
 enum BrushingZone: String {
-    case right   = "right"    // 우측 이빨 (기준 좌표계 X축 방향 운동 우세)
-    case left    = "left"     // 좌측 이빨 (기준 좌표계 Y축 방향 운동 우세)
-    case unclear = "unclear"  // RMS 차이가 너무 작아 판정 불가
+    case right   = "right"    // 우측 이빨 — Watch -Y가 기준 +Y 방향
+    case left    = "left"     // 좌측 이빨 — Watch -Y가 기준 -X 방향
+    case unclear = "unclear"  // 정지 중이거나 판정 불가
 }
 
 // MARK: - 런타임 분류기
-// 역할: ReferenceFrame을 받아 실시간 샘플을 a_ref로 변환,
-//       window 단위 RMS 비교로 BrushingZone 판정 후 iPhone으로 전송
-// 파이프라인: a_ref(t) = R_cal^T · R_att(t) · a_body(t)
+// 판별 파이프라인:
+//   1. accel magnitude RMS → 움직임 활성 감지
+//   2. R_rel = R_cal^T · R_att(t) → Watch -Y축의 기준계 방향으로 좌/우 판별
+//
+// 기준 좌표계 정의 (calibration 자세 기준, Gram-Schmidt Z축 고정):
+//   기준 +Y = Watch -Y (엄지/우측 이빨 방향)
+//   기준 +X = Watch -Z (좌측 이빨 방향)
+//   기준 +Z = world up (하늘, 고정)
+//
+// 판별 기준 (실제 테스트 기반):
+//   우측 이빨: watchMinusYy ≈ +0.9  (임계값 > 0.6)
+//   좌측 이빨: watchMinusYy ≈ +0.2~0.3  (임계값 < 0.4)
 @Observable
 final class BrushingClassifier {
 
     // MARK: - 공개 상태
     var currentZone: BrushingZone = .unclear
-    var rmsX: Double = 0.0   // 디버그용 실시간 RMS 수치
-    var rmsY: Double = 0.0
+    var rmsAccel: Double = 0.0        // 디버그: accel magnitude RMS
+    var watchMinusYx: Double = 0.0    // 디버그: watchMinusY_inRef.x
+    var watchMinusYy: Double = 0.0    // 디버그: watchMinusY_inRef.y
 
     // MARK: - 설정값
-    // window 크기: 50샘플 = 1초 @50Hz → 판정 주기 1Hz
+    // window 크기: 50샘플 = 1초 @50Hz
     private let windowSize: Int = 50
-    // RMS 차이가 이 값 미만이면 .unclear 판정
+    // accel magnitude RMS 임계값 — 미만이면 정지 판정
     // 단위: g, 실험으로 조정 필요
-    private let unclearThreshold: Double = 0.05
+    private let accelActiveThreshold: Double = 0.05
+    // watchMinusY_inRef.y 임계값 — 실제 테스트 기반
+    // 우측: 0.9, 좌측: 0.2~0.3 → 명확하게 분리
+    private let rightThreshold: Double = 0.85   // 이상이면 우측
+    private let leftThreshold: Double = 0.8    // 미만이면 좌측
 
     // MARK: - 내부 상태
     private let stream = MotionStream()
-    private var buffer: [SIMD3<Double>] = []   // a_ref 누적 buffer
+    private var buffer: [(aRef: SIMD3<Double>, rRel: CMRotationMatrix)] = []
     private var referenceFrame: ReferenceFrame
 
     // MARK: - 초기화
@@ -61,56 +74,74 @@ final class BrushingClassifier {
 
     // MARK: - 샘플 수신 (백그라운드 스레드)
     private func receive(_ sample: MotionSample) {
-        // Step 1: body → world
-        // a_world = R_att(t) · a_body
+        let rCalT = referenceFrame.rCal.transposed
+
+        // a_ref = R_cal^T · R_att(t) · a_body(t)
         let aBody  = SIMD3(sample.accelX, sample.accelY, sample.accelZ)
         let aWorld = sample.rotationMatrix.applying(to: aBody)
+        let aRef   = rCalT.applying(to: aWorld)
 
-        // Step 2: world → 기준 좌표계 A
-        // a_ref = R_cal^T · a_world
-        let aRef = referenceFrame.rCal.transposed.applying(to: aWorld)
+        // R_rel = R_cal^T · R_att(t)
+        let rRel = rCalT * sample.rotationMatrix
 
-        buffer.append(aRef)
+        buffer.append((aRef: aRef, rRel: rRel))
 
-        // window가 꽉 차면 판정 후 buffer 초기화 (텀블링 window, 1Hz)
         guard buffer.count >= windowSize else { return }
         let window = buffer
         buffer.removeAll()
         classify(window: window)
     }
 
-    // MARK: - RMS 계산 및 판정
-    private func classify(window: [SIMD3<Double>]) {
-        let rmsXVal = rms(window.map { $0.x })
-        let rmsYVal = rms(window.map { $0.y })
+    // MARK: - 판정
+    private func classify(window: [(aRef: SIMD3<Double>, rRel: CMRotationMatrix)]) {
 
+        // Step 1: accel magnitude RMS — 움직임 활성 감지
+        let magnitudes = window.map { entry in
+            sqrt(entry.aRef.x * entry.aRef.x
+               + entry.aRef.y * entry.aRef.y
+               + entry.aRef.z * entry.aRef.z)
+        }
+        let accelRMS = rms(magnitudes)
+
+        // Step 2: Watch -Y축의 기준계 방향 추출
+        let lastRRel = window.last!.rRel
+        let minusYx  = -lastRRel.m12   // watchMinusY_inRef.x
+        let minusYy  = -lastRRel.m22   // watchMinusY_inRef.y
+
+        // Step 3: 판정 (실제 테스트 데이터 기반)
         let zone: BrushingZone
-        if abs(rmsXVal - rmsYVal) < unclearThreshold {
+        if accelRMS < accelActiveThreshold {
+            // 정지 중
             zone = .unclear
-        } else if rmsXVal > rmsYVal {
+        } else if minusYy > rightThreshold {
+            // Watch -Y가 기준 +Y 방향 → 우측 이빨 (0.9 > 0.6)
             zone = .right
-        } else {
+        } else if minusYy < leftThreshold {
+            // Watch -Y가 기준 -X 방향(Y 성분 작음) → 좌측 이빨 (0.2~0.3 < 0.4)
             zone = .left
+        } else {
+            // 0.4 <= minusYy <= 0.6: 회색지대
+            zone = .unclear
         }
 
-        // iPhone으로 전송 (1Hz — window 완료마다 1회)
+        // iPhone으로 전송 (1Hz)
         let frame = BrushingFrame(
             zone:      zone.rawValue,
-            rmsX:      rmsXVal,
-            rmsY:      rmsYVal,
+            rmsX:      accelRMS,
+            rmsY:      minusYy,
             timestamp: Date().timeIntervalSince1970
         )
         WatchConnector.shared.send(frame)
 
         DispatchQueue.main.async { [weak self] in
-            self?.rmsX = rmsXVal
-            self?.rmsY = rmsYVal
-            self?.currentZone = zone
+            self?.rmsAccel     = accelRMS
+            self?.watchMinusYx = minusYx
+            self?.watchMinusYy = minusYy
+            self?.currentZone  = zone
         }
     }
 
     // MARK: - RMS 헬퍼
-    // RMS = sqrt( Σ(x²) / N )
     private func rms(_ values: [Double]) -> Double {
         guard !values.isEmpty else { return 0 }
         let sumOfSquares = values.reduce(0.0) { $0 + $1 * $1 }
