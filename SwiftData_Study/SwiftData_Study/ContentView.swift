@@ -21,17 +21,33 @@ struct ContentView: View {
         NavigationStack {
             //List(friends, id: \.name) { friend in     // 구조체에서 사용할 때 id를 사용하기 위한 구성, 만약 동명이인이면 문제 발생했음
             List(friends) { friend in                   // SwiftData가 인스턴스 내부 식별자를 구분할 수 있어서 id 지정이 필요 없음
-                HStack {                                // 리스트 내 단일 객체당 표시할 내용
-                    
-                    if friend.isBirthdayToday {         // 클래스 내부 연산 프로퍼티에 따른 이미지 출력
-                        Image(systemName: "birthday.cake")
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {                                // 리스트 내 단일 객체당 표시할 내용
+                        
+                        if friend.isBirthdayToday {         // 클래스 내부 연산 프로퍼티에 따른 이미지 출력
+                            Image(systemName: "birthday.cake")
+                        }
+                        
+                        Text(friend.name)
+                            .bold(friend.isBirthdayToday)   // 연산 프로퍼티의 값에 따른 설정 변경 여부
+                        Spacer()
+                        Text(friend.birthday, format: .dateTime.month(.wide).day().year())
                     }
                     
-                    Text(friend.name)
-                        .bold(friend.isBirthdayToday)   // 연산 프로퍼티의 값에 따른 설정 변경 여부
-                    Spacer()
-                    Text(friend.birthday, format: .dateTime.month(.wide).day().year())
+                    ForEach(friend.gifts) { gift in
+                        HStack(spacing: 6) {
+                            Image(systemName: "gift")
+                            Text(gift.name)
+                            
+                            if !gift.memo.isEmpty {
+                                Text(gift.memo)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        .font(.caption)
+                    }
                 }
+                
             }
             .navigationTitle("Birthdays")               // 리스트 상단에 해당 문구 출력
             .safeAreaInset(edge: .bottom) {             // 화면 바닥에 새로운 친구 입력을 위한 구역 지정, 이는 화면의 특정 사이드에 컨텐츠를 고정할 수 있다.
@@ -56,8 +72,20 @@ struct ContentView: View {
                 .background(.bar) // 안전한 영역 구분을 위해 패딩과 bar
             }
             .task {               // View가 처음 나타날 때 자동으로 실행되는 수정자, View가 모두 준비 되었을 때 사용하겠다는 의미
-                context.insert(Friend(name: "vince", birthday: .now))
-                context.insert(Friend(name: "as", birthday: Date(timeIntervalSince1970: 0)))
+                guard friends.isEmpty else { return }
+                
+                let vince = Friend(
+                    name: "vince",
+                    birthday: .now,
+                    gifts: [
+                        Gift(name: "Book", memo: "Birthday gift"),
+                        Gift(name: "Coffee Beans")
+                    ]
+                )
+                let asFriend = Friend(name: "as", birthday: Date(timeIntervalSince1970: 0))
+                
+                context.insert(vince)
+                context.insert(asFriend)
             }
         }
         
@@ -66,5 +94,5 @@ struct ContentView: View {
 
 #Preview {
     ContentView()
-        .modelContainer(for: Friend.self, inMemory: true) // Friend라는 모델 등록, inMemory true를 통해 앱이 종료되면 데이터를 날리겠다는 의미 (테스트용)
+        .modelContainer(for: [Friend.self, Gift.self], inMemory: true) // Friend라는 모델 등록, inMemory true를 통해 앱이 종료되면 데이터를 날리겠다는 의미 (테스트용)
 }

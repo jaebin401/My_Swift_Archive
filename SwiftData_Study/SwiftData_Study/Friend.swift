@@ -15,9 +15,13 @@ class Friend {
     var name: String
     var birthday: Date
     
-    init(name: String, birthday: Date) {   // class의 선언에선, 이 생성자가 필수이다. (구조체는 자동으로 생성함)
+    @Relationship(deleteRule: .cascade, inverse: \Gift.friend)
+    var gifts: [Gift] = []
+    
+    init(name: String, birthday: Date, gifts: [Gift] = []) {   // class의 선언에선, 이 생성자가 필수이다. (구조체는 자동으로 생성함)
         self.name = name
         self.birthday = birthday
+        self.gifts = gifts
     }
         
     var isBirthdayToday: Bool {            // 연산 프로퍼티 생성
