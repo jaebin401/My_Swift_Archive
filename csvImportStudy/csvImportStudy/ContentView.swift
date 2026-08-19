@@ -4,6 +4,9 @@
 //
 //  Created by Jaebin Ahn on 8/19/26.
 //
+// file importer로 파일 경로 선택, .fileImporter의 result에 파일 url이 저장됨
+// 이후 loadCSV라는 함수에 전달된 url의 파일을 읽어 변수 csvText 변수에 저장
+
 
 import SwiftUI
 import Foundation
@@ -31,15 +34,16 @@ struct ContentView: View {
         // SwiftUI가 제공하는 파일 선택 modifier. 이 메서드의 실행 결과로 loadCSV가 실행된다.
         .fileImporter(
             isPresented: $isShowingFileImporter,
-            allowedContentTypes: [.commaSeparatedText],
-            allowsMultipleSelection: false
+            allowedContentTypes: [.commaSeparatedText], // 허용되는 파일의 타입
+            allowsMultipleSelection: false              // 여러 파일선택 허용할건지 여부
         ) { result in
             // 파일 선택이 끝나면 성공/실패 결과가 result로 들어오고, 그 결과를 loadCSV(from:)에서 처리.
-            loadCSV(from: result)
+            loadCSV(url: result)
         }
     }
 
-    private func loadCSV(from result: Result<[URL], Error>) {
+    // loadCSV 함수의 매개변수: .fileImporter에서 반환환하는 url 혹은 error
+    private func loadCSV(url result: Result<[URL], Error>) {
         // do-catch: do 안에서 try가 실패하면 즉시 catch 블록으로 이동.
         do {
             guard let url = try result.get().first else {
