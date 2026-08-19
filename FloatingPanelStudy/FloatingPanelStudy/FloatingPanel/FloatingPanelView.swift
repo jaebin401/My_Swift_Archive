@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct FloatingPanelContentView: View {
+struct FloatingPanelView: View {
     @Binding var isPresented: Bool
 
     var body: some View {
@@ -45,11 +45,11 @@ struct FloatingPanelContentView: View {
             }
             .padding(24)
         }
-        .frame(width: 420, height: 280)
+        .frame(minWidth: 420, minHeight: 280)
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 }
 
 #Preview {
-    FloatingPanelContentView(isPresented: .constant(true))
+    FloatingPanelView(isPresented: .constant(true))
 }

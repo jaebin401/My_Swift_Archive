@@ -37,7 +37,7 @@ struct ContentView: View {
             isPresented: $isFloatingPanelPresented,
             contentRect: CGRect(x: 0, y: 0, width: 420, height: 280)
         ) {
-            FloatingPanelContentView(isPresented: $isFloatingPanelPresented)
+            FloatingPanelView(isPresented: $isFloatingPanelPresented)
         }
     }
 }
