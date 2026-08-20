@@ -12,16 +12,25 @@ import SwiftUI
 final class CSVImportViewModel {
     var csvText = ""
     var errorMessage: String?
+    var parsedCSV: ParsedCSV?
 
     private let fileLoader = CSVFileLoader()
+    private let parser = CSVParser()
     
     // 기존 CSVImportView에 있던 함수랑 뭐가 다르지?
     // ViewModel의 loadCSV: View에서 URL을 받은 뒤, 실제 파일 읽기는 CSVFileLoader에게 맡기고 화면에 보여줄 상태만 업데이트.
     func loadCSV(from url: URL) {
         do {
-            csvText = try fileLoader.load(from: url)
+            let text = try fileLoader.load(from: url)
+            let parsedCSV = try parser.parse(text)
+
+            csvText = text
+            self.parsedCSV = parsedCSV
             errorMessage = nil
-        } catch {
+        }
+        
+        catch {
+            parsedCSV = nil
             errorMessage = error.localizedDescription
         }
     }

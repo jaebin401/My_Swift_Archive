@@ -22,12 +22,45 @@ struct CSVImportView: View {
                 isShowingFileImporter = true
             }
             
-            ScrollView {
-                Text(viewModel.errorMessage ?? viewModel.csvText)
-                // .textSelection: Text를 드래그해서 복사할 수 있게 해주는 modifier. 버튼은 아니고, 텍스트 선택 기능만 켠다.
-                    .textSelection(.enabled)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding()
+//            ScrollView {
+//                Text(viewModel.errorMessage ?? viewModel.csvText)
+//                // .textSelection: Text를 드래그해서 복사할 수 있게 해주는 modifier. 버튼은 아니고, 텍스트 선택 기능만 켠다.
+//                    .textSelection(.enabled)
+//                    .frame(maxWidth: .infinity, alignment: .leading)
+//                    .padding()
+//            }
+            
+            if let errorMessage = viewModel.errorMessage {
+                ContentUnavailableView(       // 얜 뭐임?
+                    "CSV 가져오기 실패",
+                    systemImage: "exclamationmark.triangle",
+                    description: Text(errorMessage)
+                )
+            } else if let parsedCSV = viewModel.parsedCSV {
+                List(parsedCSV.rows) { row in
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("CSV \(row.rowNumber)번째 행")
+                            .font(.headline)
+
+                        ForEach(parsedCSV.headers, id: \.self) { header in
+                            HStack(alignment: .top) {
+                                Text(header)
+                                    .fontWeight(.semibold)
+                                    .frame(width: 80, alignment: .leading)
+
+                                Text(row.values[header] ?? "")
+                                    .textSelection(.enabled)
+                            }
+                        }
+                    }
+                    .padding(.vertical, 4)
+                }
+            } else {
+                ContentUnavailableView(
+                    "선택된 CSV가 없습니다",
+                    systemImage: "tablecells",
+                    description: Text("CSV 선택 버튼을 눌러 파일을 선택하세요.")
+                )
             }
         }
         // SwiftUI가 제공하는 파일 선택 modifier. 이 메서드의 실행 결과로 loadCSV가 실행된다.
