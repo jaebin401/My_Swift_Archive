@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import SwiftData
 
 @main
 struct csvImportStudyApp: App {
@@ -13,5 +14,6 @@ struct csvImportStudyApp: App {
         WindowGroup {
             CSVImportView()
         }
+        .modelContainer(for: ImportedRecord.self)
     }
 }

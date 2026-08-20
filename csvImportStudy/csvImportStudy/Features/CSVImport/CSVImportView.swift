@@ -9,59 +9,71 @@
 
 
 import SwiftUI
+import SwiftData
 import Foundation
 import UniformTypeIdentifiers
 
 struct CSVImportView: View {
+    @Environment(\.modelContext)
+    private var modelContext
+    
+    @Query(
+        sort: \ImportedRecord.sourceRowNumber,
+        order: .forward
+    )
+    private var records: [ImportedRecord]
+    
     @State private var isShowingFileImporter = false
     @State private var viewModel = CSVImportViewModel()
     
     var body: some View {
         VStack {
             Button("CSV 선택") {
-                isShowingFileImporter = true
-            }
-            
-//            ScrollView {
-//                Text(viewModel.errorMessage ?? viewModel.csvText)
-//                // .textSelection: Text를 드래그해서 복사할 수 있게 해주는 modifier. 버튼은 아니고, 텍스트 선택 기능만 켠다.
-//                    .textSelection(.enabled)
-//                    .frame(maxWidth: .infinity, alignment: .leading)
-//                    .padding()
-//            }
-            
-            if let errorMessage = viewModel.errorMessage {
-                ContentUnavailableView(       // 얜 뭐임?
-                    "CSV 가져오기 실패",
-                    systemImage: "exclamationmark.triangle",
-                    description: Text(errorMessage)
-                )
-            } else if let parsedCSV = viewModel.parsedCSV {
-                List(parsedCSV.rows) { row in
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("CSV \(row.rowNumber)번째 행")
-                            .font(.headline)
-
-                        ForEach(parsedCSV.headers, id: \.self) { header in
-                            HStack(alignment: .top) {
-                                Text(header)
-                                    .fontWeight(.semibold)
-                                    .frame(width: 80, alignment: .leading)
-
-                                Text(row.values[header] ?? "")
-                                    .textSelection(.enabled)
-                            }
-                        }
-                    }
-                    .padding(.vertical, 4)
+                    isShowingFileImporter = true
                 }
-            } else {
-                ContentUnavailableView(
-                    "선택된 CSV가 없습니다",
-                    systemImage: "tablecells",
-                    description: Text("CSV 선택 버튼을 눌러 파일을 선택하세요.")
-                )
-            }
+
+                if viewModel.isImporting {
+                    ProgressView("CSV 가져오는 중...")
+                }
+
+                if let errorMessage = viewModel.errorMessage { // if let이면 상수 errorMessage를 선언과 동시에 if문으로 쓰는건가?
+                    ContentUnavailableView(
+                        "CSV 가져오기 실패",
+                        systemImage: "exclamationmark.triangle",
+                        description: Text(errorMessage)
+                    )
+                } else if records.isEmpty {
+                    ContentUnavailableView(
+                        "저장된 데이터가 없습니다",
+                        systemImage: "externaldrive",
+                        description: Text("CSV 파일을 선택하세요.")
+                    )
+                } else {
+                    List(records) { record in
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text(record.name ?? "이름 없음")
+                                .font(.headline)
+
+                            Text("본명: \(record.realName ?? "없음")")
+                            Text("성별: \(record.gender ?? "없음")")
+
+                            Text(
+                                "나이: \(record.age.map { String($0) } ?? "없음")"
+                            )
+
+                            Text(
+                                "키: \(record.height.map { String($0) } ?? "없음")"
+                            )
+
+                            Text(
+                                "\(record.sourceFileName) · \(record.sourceRowNumber)행"
+                            )
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        }
+                        .padding(.vertical, 4)
+                    }
+                }
         }
         // SwiftUI가 제공하는 파일 선택 modifier. 이 메서드의 실행 결과로 loadCSV가 실행된다.
         .fileImporter(
@@ -77,7 +89,9 @@ struct CSVImportView: View {
             case .success(let urls):
                 // .success(let urls): 파일 선택이 성공했을 때 URL 배열을 urls라는 이름으로 꺼냄.
                 guard let url = urls.first else { return }
-                viewModel.loadCSV(from: url) // 파일 선택이 끝나면 성공/실패 결과가 result로 들어오고, 그 결과를 viewmodel에 있는 loadCSV(from:)에서 처리.
+                
+                viewModel.importCSV(from: url, modelContext: modelContext)
+                //viewModel.loadCSV(from: url) // 파일 선택이 끝나면 성공/실패 결과가 result로 들어오고, 그 결과를 viewmodel에 있는 loadCSV(from:)에서 처리.
                 
             case .failure(let error):
                 // .failure(let error): 파일 선택이 실패했을 때 Error 값을 error라는 이름으로 꺼냄.

@@ -5,54 +5,37 @@
 //  Created by Jaebin Ahn on 8/20/26.
 //
 import SwiftUI
+import SwiftData
 
 @MainActor
 @Observable
 
 final class CSVImportViewModel {
-    var csvText = ""
     var errorMessage: String?
-    var parsedCSV: ParsedCSV?
+    var importedCount = 0
+    var isImporting = false
 
-    private let fileLoader = CSVFileLoader()
-    private let parser = CSVParser()
-    private let recordMapper = CSVRecordMapper()
-    
+    private let importService = CSVImportService()
     // 기존 CSVImportView에 있던 함수랑 뭐가 다르지?
     // ViewModel의 loadCSV: View에서 URL을 받은 뒤, 실제 파일 읽기는 CSVFileLoader에게 맡기고 화면에 보여줄 상태만 업데이트.
-    func loadCSV(from url: URL) {
+    func importCSV(
+        from url: URL,
+        modelContext: ModelContext
+    ) {
+        isImporting = true
+        errorMessage = nil
+
+        defer {
+            isImporting = false
+        }
+
         do {
-            let text = try fileLoader.load(from: url)
-            let parsedCSV = try parser.parse(text)
-
-            let records = try parsedCSV.rows.map { row in
-                try recordMapper.map(
-                    row: row,
-                    sourceFileName: url.lastPathComponent
-                )
-            }
-
-            csvText = text
-            self.parsedCSV = parsedCSV
-            errorMessage = nil
-
-            for record in records {
-                let nameText = record.name ?? "nil"
-                let ageText = record.age.map { String($0) } ?? "nil"
-                let heightText = record.height.map { String($0) } ?? "nil"
-
-                print(
-                    """
-                    이름: \(nameText)
-                    나이: \(ageText)
-                    키: \(heightText)
-                    파일: \(record.sourceFileName)
-                    행: \(record.sourceRowNumber)
-                    """
-                )
-            }
+            importedCount = try importService.importCSV(
+                from: url,
+                into: modelContext
+            )
         } catch {
-            parsedCSV = nil
+            importedCount = 0
             errorMessage = error.localizedDescription
         }
     }
