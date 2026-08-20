@@ -51,8 +51,8 @@ struct CSVRecordMapper {
         )
     }
     
-    // 매개변수 입력 시 _를 써서 함수의 실사용에서 어떤 변수인지 명시를 생략하는 이유는?
-    // 답변: 첫 번째 값 자체가 함수 이름 optionalString과 함께 읽혀서 라벨이 없어도 의미가 충분하기 때문. optionalString(value:)보다 optionalString(value)가 더 자연스러운 호출.
+    /// 매개변수 입력 시 _를 써서 함수의 실사용에서 어떤 변수인지 명시를 생략하는 이유는?
+    /// 답변: 첫 번째 값 자체가 함수 이름 optionalString과 함께 읽혀서 라벨이 없어도 의미가 충분하기 때문. optionalString(value:)보다 optionalString(value)가 더 자연스러운 호출.
     private func optionalString(_ value: String? ) -> String? {
         guard let value else {
             return nil
@@ -74,7 +74,8 @@ struct CSVRecordMapper {
         rowNumber: Int,
         columnName: String
     ) throws -> Int? { // 이 구문의 의미는?
-        // 답변: 이 함수는 에러를 던질 수 있고, 성공해도 Int 값이 없을 수 있다는 뜻. 빈 값이면 nil, 숫자로 변환 불가능한 값이면 throw.
+                       // 답변: 이 함수는 에러를 던질 수 있고, 성공해도 Int 값이 없을 수 있다는 뜻. 빈 값이면 nil, 숫자로 변환 불가능한 값이면 throw.
+        
         guard let text = optionalString(value) else {
             return nil
         }
