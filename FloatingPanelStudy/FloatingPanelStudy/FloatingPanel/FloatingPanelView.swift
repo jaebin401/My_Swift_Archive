@@ -51,5 +51,6 @@ struct FloatingPanelView: View {
 }
 
 #Preview {
-    FloatingPanelView(isPresented: .constant(true))
+    FloatingPanelView(isPresented: .constant(true)) // 여기에 들어가는 true가 binding으로 받을 isPresented인건 알겠다. 근데 .constant(true)는 뭐임?
+    // 답변: Preview에서 임시로 쓰는 고정 Binding 값. 실제 상태를 바꾸는 @State 없이도 `isPresented`에 항상 true인 Binding을 넘겨서 미리보기를 띄우기 위한 것임.
 }

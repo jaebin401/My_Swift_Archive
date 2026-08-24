@@ -4,6 +4,8 @@
 //
 //  Created by Jaebin Ahn on 7/20/26.
 //
+// 이 코드의 전체적인 목적과 기능이 알고싶다
+// 답변: SwiftUI 뷰를 macOS의 떠있는 패널(NSPanel) 안에 넣어 보여주는 코드. 패널 위치 제한, 화면 가장자리 스냅, 닫힘 상태 동기화까지 담당함.
 
 import SwiftUI
 
@@ -22,6 +24,8 @@ final class FloatingPanel<Content: View>: NSPanel {
     ) {
         self._isPresented = isPresented
 
+        // 이건 무슨말이여
+        // 답변: 부모 클래스인 NSPanel을 실제로 초기화하는 부분. 패널 크기, 창 스타일, 화면 버퍼 방식 등을 넘겨서 macOS 창 객체를 만드는 단계임.
         super.init(
             contentRect: contentRect,
             styleMask: [
